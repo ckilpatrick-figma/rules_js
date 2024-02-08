@@ -16,6 +16,9 @@ _attrs = dicts.add(js_binary_lib.attrs, {
     "use_execroot_entry_point": attr.bool(
         default = True,
     ),
+    "io_base_dir": attr.string(
+        default = ""
+    ),
     "grant_sandbox_write_permissions": attr.bool(),
     "allow_execroot_entry_point_with_no_copy_data_to_bin": attr.bool(),
     "command": attr.string(),
@@ -89,6 +92,8 @@ def _js_run_devserver_impl(ctx):
         config["command"] = ctx.attr.command
     if ctx.attr.grant_sandbox_write_permissions:
         config["grant_sandbox_write_permissions"] = "1"
+    if ctx.attr.io_base_dir != "":
+        config["io_base_dir"] = ctx.attr.io_base_dir
 
     ctx.actions.write(config_file, json.encode(config))
 
@@ -126,6 +131,7 @@ def js_run_devserver(
         command = None,
         grant_sandbox_write_permissions = False,
         use_execroot_entry_point = True,
+        io_base_dir = "",
         allow_execroot_entry_point_with_no_copy_data_to_bin = False,
         **kwargs):
     """Runs a devserver via binary target or command.
@@ -276,6 +282,7 @@ def js_run_devserver(
         command = command,
         grant_sandbox_write_permissions = grant_sandbox_write_permissions,
         use_execroot_entry_point = use_execroot_entry_point,
+        io_base_dir = io_base_dir,
         allow_execroot_entry_point_with_no_copy_data_to_bin = allow_execroot_entry_point_with_no_copy_data_to_bin,
         **kwargs
     )

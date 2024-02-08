@@ -298,7 +298,7 @@ async function sync(files, sandbox, writePerm) {
     )
 }
 
-async function main(args, sandbox) {
+async function main(args) {
     console.error(
         `\n\nStarting js_run_devserver ${process.env.JS_BINARY__TARGET}`
     )
@@ -306,6 +306,17 @@ async function main(args, sandbox) {
     const configPath = path.join(RUNFILES_ROOT, args[0])
 
     const config = JSON.parse(await fs.promises.readFile(configPath))
+
+    const sandbox_root = config.io_base_dir ?? os.tmpdir()
+
+    const sandbox = path.join(
+        await fs.promises.mkdtemp(
+            path.join(sandbox_root, 'js_run_devserver-')
+        ),
+        process.env.JS_BINARY__WORKSPACE
+    )
+    // Intentionally synchronous; see comment on mkdirpSync
+    mkdirpSync(path.join(sandbox, process.env.JS_BINARY__CHDIR || ''))
 
     await sync(
         config.data_files,
@@ -365,7 +376,7 @@ async function main(args, sandbox) {
 
         proc.on('close', (code) => {
             console.error(`child tool process exited with code ${code}`)
-            resolve()
+            resolve(sandbox)
             process.exit(code)
         })
 
@@ -420,15 +431,7 @@ async function main(args, sandbox) {
         return
     let sandbox
     try {
-        sandbox = path.join(
-            await fs.promises.mkdtemp(
-                path.join(os.tmpdir(), 'js_run_devserver-')
-            ),
-            process.env.JS_BINARY__WORKSPACE
-        )
-        // Intentionally synchronous; see comment on mkdirpSync
-        mkdirpSync(path.join(sandbox, process.env.JS_BINARY__CHDIR || ''))
-        await main(process.argv.slice(2), sandbox)
+        sandbox = await main(process.argv.slice(2))
     } catch (e) {
         console.error(e)
         process.exit(1)
